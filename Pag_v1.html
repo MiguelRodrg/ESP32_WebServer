@@ -1,35 +1,47 @@
 <!-- Comando de powershell para crear el servidor local, y dirección web para ejecutar la página web. -->
 <!-- http://localhost:8000/Pag_v1.html -->
-<!-- python -m http.server 8000 -->
+<!-- python -m http.server 8000 --bind 127.0.0.1 --ssl -->
+
+
 
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ESP32 Cámara Web</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        #video { width: 640px; height: 480px; border: 2px solid black; }
-        input, button { margin: 10px; padding: 10px; font-size: 16px; }
-    </style>
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ESP32 Cámara Web - Reconocimiento Facial</title>
+    
+        <!-- Cargar TensorFlow.js y Face-API.js desde la CDN -->
+        <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@latest/dist/face-api.min.js"></script>
+
+    
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; }
+            #video-container { position: relative; display: inline-block; }
+            #video { width: 640px; height: 480px; border: 2px solid black; }
+            #canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+            input, button, select { margin: 10px; padding: 10px; font-size: 16px; }
+            label { margin: 10px; font-size: 16px; }
+        </style>
+    </head>
+    
 <body>
 
-    <h1>ESP32 Cámara Web</h1>
+    <h1>ESP32 Cámara Web - Reconocimiento Facial</h1>
 
     <!-- Campo para ingresar la IP de la ESP32 -->
     <label for="ip">Dirección IP de la ESP32:</label>
-    <input type="text" id="ip" value="192.168.6.114">
+    <input type="text" id="ip" value="">
     <button onclick="conectarVideo()">Iniciar Video</button>
     <button onclick="detenerVideo()">Detener Video</button>
 
     <h2>Video en Vivo</h2>
-    <!-- <img id="video" src="http://192.168.6.114:81/stream" /> -->
-    <!-- <t>Actual ip: http://192.168.6.114:81/stream</t> -->
-    <img id="video" src="" alt="Esperando conexión..." />
+    <div id="video-container">
+        <img id="video" src="" alt="Esperando conexión..." />
+        <canvas id="canvas"></canvas>
+    </div>
 
-    <h2>Enviar Comando a la ESP32</h2>
     <h2>Configuración de Cámara</h2>
 
     <!-- Selección de calidad -->
@@ -47,17 +59,47 @@
     <!-- Botones de volteo -->
     <div>
         <input type="checkbox" id="hmirror" onchange="voltearCamara('hmirror')">
-        <label for="hmirror-group">Voltear Horizontal</label>
+        <label for="hmirror">Voltear Horizontal</label>
 
         <input type="checkbox" id="vflip" onchange="voltearCamara('vflip')">
-        <label for="vflip-group">Voltear Vertical</label>
+        <label for="vflip">Voltear Vertical</label>
     </div>
-    <!-- <button onclick="enviarComando('CAMBIAR_WIFI')">Cambiar WiFi</button>#TODO: Cambiar WiFi -->
 
     <script>
-        function conectarVideo() {
+        tf.setBackend('cpu');
+        
+        async function cargarModelos() {
+            if (typeof tf === 'undefined') {
+                console.error("TensorFlow.js no se ha cargado correctamente.");
+                return;
+            }
+            console.log("Cambiando backend a CPU...");
+            await tf.setBackend('cpu'); // Evita errores con WebGL
+            
+            console.log("Verificando si los modelos están disponibles...");
+            try {
+                // Comprobar acceso a los modelos
+                let response = await fetch('models/ssd_mobilenetv1_model-weights_manifest.json');
+                if (!response.ok) {
+                    throw new Error("Los modelos no están disponibles. Revisa la carpeta 'models/'.");
+                }
+
+                console.log("Cargando modelos...");
+                await faceapi.nets.ssdMobilenetv1.loadFromUri('models/');
+                console.log("Modelos cargados correctamente.");
+            } catch (error) {
+                console.error("Error cargando los modelos:", error);
+            }
+        }
+
+
+        async function conectarVideo() {
             var ip = document.getElementById("ip").value;
             document.getElementById("video").src = "http://" + ip + ":81/stream";
+
+            // Asegurar que los modelos están cargados antes de iniciar reconocimiento
+            await cargarModelos();
+            iniciarReconocimiento();
         }
 
         function detenerVideo() {
@@ -65,20 +107,11 @@
             alert("Transmisión detenida.");
         }
 
-        function enviarComando(comando) {
-            var ip = document.getElementById("ip").value;
-            fetch("http://" + ip + "/" + comando, { method: "GET" })
-                .then(response => response.text())
-                .then(data => alert("Respuesta ESP32: " + data))
-                .catch(error => alert("Error enviando comando: " + error));
-        }
-
         function cambiarResolucion() {
             var ip = document.getElementById("ip").value;
             var resolucion = document.getElementById("resolucion").value;
             fetch(`http://${ip}/control?var=framesize&val=${resolucion}`, { method: "GET" })
                 .then(response => response.text())
-                .then(data => alert("Resolución cambiada a: " + document.getElementById("resolucion").selectedOptions[0].text))
                 .catch(error => alert("Error cambiando resolución: " + error));
         }
 
@@ -89,6 +122,46 @@
                 .then(response => response.text())
                 .catch(error => alert("Error volteando cámara: " + error));
         }
+
+        async function iniciarReconocimiento() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+
+            canvas.width = video.width;
+            canvas.height = video.height;
+
+            async function detectarRostros() {
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+                const context = canvas.getContext('2d');
+
+                canvas.width = video.width;
+                canvas.height = video.height;
+
+                async function detectar() {
+                    if (!faceapi.nets.ssdMobilenetv1.params) {
+                        console.error("Modelos aún no están cargados. Esperando...");
+                        setTimeout(detectar, 500);
+                        return;
+                    }
+
+                    const detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options());
+
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    faceapi.draw.drawDetections(canvas, detections);
+
+                    requestAnimationFrame(detectar);
+                }
+
+                detectar();
+            }
+
+
+            detectarRostros();
+        }
+
+        cargarModelos();
     </script>
 
 </body>

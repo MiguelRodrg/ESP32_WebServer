@@ -25,7 +25,7 @@ char password[32];
 void startCameraServer();
 
 void cambiarWiFi() {
-    Serial.println("\nIntroduce la nueva SSID:");
+    Serial.println("\n Introduce la nueva SSID:");
     while (Serial.available() == 0);
     String new_ssid = Serial.readStringUntil('\\n');
     new_ssid.trim();
