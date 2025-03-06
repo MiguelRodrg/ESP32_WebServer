@@ -21,7 +21,8 @@
     <!-- Campo para ingresar la IP de la ESP32 -->
     <label for="ip">Dirección IP de la ESP32:</label>
     <input type="text" id="ip" value="192.168.6.114">
-    <button onclick="conectarVideo()">Conectar Video</button>
+    <button onclick="conectarVideo()">Iniciar Video</button>
+    <button onclick="detenerVideo()">Detener Video</button>
 
     <h2>Video en Vivo</h2>
     <!-- <img id="video" src="http://192.168.6.114:81/stream" /> -->
@@ -35,6 +36,10 @@
         function conectarVideo() {
             var ip = document.getElementById("ip").value;
             document.getElementById("video").src = "http://" + ip + ":81/stream";
+        }
+
+        function detenerVideo() {
+            window.stop();
         }
 
         function enviarComando(comando) {
