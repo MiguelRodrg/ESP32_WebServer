@@ -30,7 +30,29 @@
     <img id="video" src="" alt="Esperando conexión..." />
 
     <h2>Enviar Comando a la ESP32</h2>
-    <button onclick="enviarComando('CAMBIAR_WIFI')">Cambiar WiFi</button>
+    <h2>Configuración de Cámara</h2>
+
+    <!-- Selección de calidad -->
+    <label for="resolucion">Calidad de la Cámara:</label>
+    <select id="resolucion" onchange="cambiarResolucion()">
+        <option value="10">UXGA (1600x1200)</option>
+        <option value="9">SXGA (1280x1024)</option>
+        <option value="8">XGA (1024x768)</option>
+        <option value="7">SVGA (800x600)</option>
+        <option value="6">VGA (640x480)</option>
+        <option value="5">CIF (400x296)</option>
+        <option value="4">QVGA (320x240)</option>
+    </select>
+
+    <!-- Botones de volteo -->
+    <div>
+        <input type="checkbox" id="hmirror" onchange="voltearCamara('hmirror')">
+        <label for="hmirror-group">Voltear Horizontal</label>
+
+        <input type="checkbox" id="vflip" onchange="voltearCamara('vflip')">
+        <label for="vflip-group">Voltear Vertical</label>
+    </div>
+    <!-- <button onclick="enviarComando('CAMBIAR_WIFI')">Cambiar WiFi</button>#TODO: Cambiar WiFi -->
 
     <script>
         function conectarVideo() {
@@ -40,6 +62,7 @@
 
         function detenerVideo() {
             window.stop();
+            alert("Transmisión detenida.");
         }
 
         function enviarComando(comando) {
@@ -48,6 +71,23 @@
                 .then(response => response.text())
                 .then(data => alert("Respuesta ESP32: " + data))
                 .catch(error => alert("Error enviando comando: " + error));
+        }
+
+        function cambiarResolucion() {
+            var ip = document.getElementById("ip").value;
+            var resolucion = document.getElementById("resolucion").value;
+            fetch(`http://${ip}/control?var=framesize&val=${resolucion}`, { method: "GET" })
+                .then(response => response.text())
+                .then(data => alert("Resolución cambiada a: " + document.getElementById("resolucion").selectedOptions[0].text))
+                .catch(error => alert("Error cambiando resolución: " + error));
+        }
+
+        function voltearCamara(id) {
+            var ip = document.getElementById("ip").value;
+            var valor = document.getElementById(id).checked ? 1 : 0;
+            fetch(`http://${ip}/control?var=${id}&val=${valor}`, { method: "GET" })
+                .then(response => response.text())
+                .catch(error => alert("Error volteando cámara: " + error));
         }
     </script>
 
