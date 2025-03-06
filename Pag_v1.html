@@ -1,0 +1,50 @@
+<!-- Comando de powershell para crear el servidor local, y dirección web para ejecutar la página web. -->
+<!-- http://localhost:8000/Pag_v1.html -->
+<!-- python -m http.server 8000 -->
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Cámara Web</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #video { width: 640px; height: 480px; border: 2px solid black; }
+        input, button { margin: 10px; padding: 10px; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+    <h1>ESP32 Cámara Web</h1>
+
+    <!-- Campo para ingresar la IP de la ESP32 -->
+    <label for="ip">Dirección IP de la ESP32:</label>
+    <input type="text" id="ip" value="192.168.6.114">
+    <button onclick="conectarVideo()">Conectar Video</button>
+
+    <h2>Video en Vivo</h2>
+    <!-- <img id="video" src="http://192.168.6.114:81/stream" /> -->
+    <!-- <t>Actual ip: http://192.168.6.114:81/stream</t> -->
+    <img id="video" src="" alt="Esperando conexión..." />
+
+    <h2>Enviar Comando a la ESP32</h2>
+    <button onclick="enviarComando('CAMBIAR_WIFI')">Cambiar WiFi</button>
+
+    <script>
+        function conectarVideo() {
+            var ip = document.getElementById("ip").value;
+            document.getElementById("video").src = "http://" + ip + ":81/stream";
+        }
+
+        function enviarComando(comando) {
+            var ip = document.getElementById("ip").value;
+            fetch("http://" + ip + "/" + comando, { method: "GET" })
+                .then(response => response.text())
+                .then(data => alert("Respuesta ESP32: " + data))
+                .catch(error => alert("Error enviando comando: " + error));
+        }
+    </script>
+
+</body>
+</html>
