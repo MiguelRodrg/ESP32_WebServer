@@ -14,11 +14,34 @@
 #define CAMERA_MODEL_AI_THINKER
 
 #include "camera_pins.h"
+#include <Preferences.h>
+Preferences preferences;
 
-const char* ssid = "Perry";
-const char* password = "t4y5u6i7o8";
+const char* default_ssid = "Perry";
+const char* default_password = "t4y5u6i7o8";
+char ssid[32];
+char password[32];
 
 void startCameraServer();
+
+void cambiarWiFi() {
+    Serial.println("\nIntroduce la nueva SSID:");
+    while (Serial.available() == 0);
+    String new_ssid = Serial.readStringUntil('\\n');
+    new_ssid.trim();
+
+    Serial.println("Introduce la nueva contraseña:");
+    while (Serial.available() == 0);
+    String new_password = Serial.readStringUntil('\\n');
+    new_password.trim();
+
+    preferences.putString("ssid", new_ssid);
+    preferences.putString("password", new_password);
+
+    Serial.println("Nueva configuración guardada. Reiniciando ESP...");
+    delay(2000);
+    ESP.restart();
+}
 
 void setup() {
   Serial.begin(115200);
@@ -84,11 +107,32 @@ void setup() {
   s->set_hmirror(s, 1);
 #endif
 
+  preferences.begin("wifi", false);
+  String stored_ssid = preferences.getString("ssid", "default_SSID");
+  String stored_password = preferences.getString("password", "default_PASS");
+  stored_ssid.toCharArray(ssid, 32);
+  stored_password.toCharArray(password, 32);
   WiFi.begin(ssid, password);
+  
 
   while (WiFi.status() != WL_CONNECTED) {
+    bool validate = false;
+    if(validate){
+      Serial.print("ssid:");
+      Serial.println(ssid);
+      Serial.print("Password:");
+      Serial.println(password);
+      validate=true;
+    }
     delay(500);
     Serial.print(".");
+    if (Serial.available()) {
+    String input = Serial.readStringUntil('\\n');
+    input.trim();
+      if (input == "CAMBIAR_WIFI") {
+          cambiarWiFi();
+      }
+    }
   }
   Serial.println("");
   Serial.println("WiFi connected");
@@ -98,6 +142,15 @@ void setup() {
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
+  if (Serial.available()) {
+    String input = Serial.readStringUntil('\\n');
+    input.trim();
+
+    if (input == "CAMBIAR_WIFI") {
+        cambiarWiFi();
+    }
+  }
+
 }
 
 void loop() {
