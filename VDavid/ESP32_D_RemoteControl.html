@@ -1,0 +1,77 @@
+<!-- [PROGRAMA REMOTECONTROL HTTP ESP32 SERVER] -->
+<!-- David Miguel Garcia Palacios -->
+<!-- Universidad Nacional de Colombia Sede Bogota -->
+
+<html>
+
+<!-- [HEADER Y ESTILO DE LA PAGINA]-->
+<head>
+    <meta charset="UTF-8">
+    <title>RemoteControl ESP32</title>
+    <style>
+        body {font-family: Arial, sans-serif; text-align: center;}
+        button {padding: 10px 20px; margin: 5px; font-size: 16px;}
+        button.active {box-shadow: inset 2px 2px 5px gray}
+        #videoStream {width: 320px; height: 240px; border: 2px solid black; margin-top: 20px;}
+    </style>
+</head>
+
+<!-- [CUERPO Y ELEMENTOS DE LA PAGINA]-->
+<body>
+    <h1>Ejemplo de Control Remoto de ESP32</h1>
+    <div>
+        <button id="button_led" data-active="false">LED</button>
+        <button id="button_servo_up" data-active="false">UP</button>
+        <button id="button_servo_down" data-active="false">DOWN</button>
+    </div>
+    <h2>Video en Tiempo Real</h2>
+    <div>
+        <img id="video_stream" src="" alt="Stream de la cámara">
+    </div>
+
+<!-- [SCRIPT INTEGRADO DE LA PAGINA]-->
+<script>
+
+    // Declaracion de la direccion IP del 
+    const ESP32_IP = '192.168.4.1';
+    
+    // Función de envio de comandos
+    function sendCommand(cmd) {
+        fetch(`http://${ESP32_IP}/${cmd}`, {cache:"no-store", mode:"no-cors"})
+        .catch(error => console.error('Error:', error));
+    }
+    
+    // Llamado a elementos del cuerpo
+    const button_led = document.getElementById("button_led");
+    const button_servo_up = document.getElementById("button_servo_up");
+    const button_servo_down = document.getElementById("button_servo_down");
+    const video_stream = document.getElementById("video_stream");
+
+    // Configuracion de la fuente de video
+    video_stream.src = `http://${ESP32_IP}/stream`;
+
+    // Configuracion de eventos para botones
+    button_led.addEventListener("click", () => {
+        if(button_led.dataset.active === "false"){
+            sendCommand('led_on');
+            button_led.dataset.active = "true";
+            button_led.classList.add('active');
+        }else{
+            sendCommand('led_off');
+            button_led.dataset.active = "false";
+            button_led.classList.remove('active');
+        }
+    });
+
+    button_servo_up.addEventListener("click", () =>{
+        sendCommand('servo_up');
+    });
+
+    button_servo_down.addEventListener("click", () =>{
+        sendCommand('servo_down');
+    });
+
+</script>
+
+</body>
+</html>
