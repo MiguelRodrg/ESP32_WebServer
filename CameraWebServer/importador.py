@@ -1,3 +1,5 @@
+# Archivo para descomprimir el código HTML compreso en el código cpp del programador de la ESP32-CAM
+
 import gzip
 
 with open("camera_index.h", "rb") as f:
