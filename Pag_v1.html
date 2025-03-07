@@ -1,7 +1,3 @@
-<!-- Comando de powershell para crear el servidor local, y dirección web para ejecutar la página web. -->
-<!-- http://localhost:8000/Pag_v1.html -->
-<!-- python -m http.server 8000 -->
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,50 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ESP32 Cámara Web</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
+        body { font-family: Arial, sans-serif; text-align: center; display: flex; justify-content: center; }
         #video { width: 640px; height: 480px; border: 2px solid black; }
         input, button { margin: 10px; padding: 10px; font-size: 16px; }
+        .container { display: flex; }
+        .controls { margin-left: 20px; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .grid button { padding: 20px; font-size: 18px; }
     </style>
 </head>
 <body>
-
-    <h1>ESP32 Cámara Web</h1>
-
-    <!-- Campo para ingresar la IP de la ESP32 -->
-    <label for="ip">Dirección IP de la ESP32:</label>
-    <input type="text" id="ip" value="192.168.6.114">
-    <button onclick="conectarVideo()">Iniciar Video</button>
-    <button onclick="detenerVideo()">Detener Video</button>
-
-    <h2>Video en Vivo</h2>
-    <!-- <img id="video" src="http://192.168.6.114:81/stream" /> -->
-    <!-- <t>Actual ip: http://192.168.6.114:81/stream</t> -->
-    <img id="video" src="" alt="Esperando conexión..." />
-
-    <h2>Enviar Comando a la ESP32</h2>
-    <h2>Configuración de Cámara</h2>
-
-    <!-- Selección de calidad -->
-    <label for="resolucion">Calidad de la Cámara:</label>
-    <select id="resolucion" onchange="cambiarResolucion()">
-        <option value="10">UXGA (1600x1200)</option>
-        <option value="9">SXGA (1280x1024)</option>
-        <option value="8">XGA (1024x768)</option>
-        <option value="7">SVGA (800x600)</option>
-        <option value="6">VGA (640x480)</option>
-        <option value="5">CIF (400x296)</option>
-        <option value="4">QVGA (320x240)</option>
-    </select>
-
-    <!-- Botones de volteo -->
-    <div>
-        <input type="checkbox" id="hmirror" onchange="voltearCamara('hmirror')">
-        <label for="hmirror-group">Voltear Horizontal</label>
-
-        <input type="checkbox" id="vflip" onchange="voltearCamara('vflip')">
-        <label for="vflip-group">Voltear Vertical</label>
+    <div class="container">
+        <div>
+            <h1>ESP32 Cámara Web</h1>
+            <label for="ip">Dirección IP de la ESP32:</label>
+            <input type="text" id="ip" value="192.168.6.114">
+            <button onclick="conectarVideo()">Iniciar Video</button>
+            <button onclick="detenerVideo()">Detener Video</button>
+            <h2>Video en Vivo</h2>
+            <img id="video" src="" alt="Esperando conexión..." />
+            <h2>Configuración de Cámara</h2>
+            <label for="resolucion">Calidad de la Cámara:</label>
+            <select id="resolucion" onchange="cambiarResolucion()">
+                <option value="10">UXGA (1600x1200)</option>
+                <option value="9">SXGA (1280x1024)</option>
+                <option value="8">XGA (1024x768)</option>
+                <option value="7">SVGA (800x600)</option>
+                <option value="6">VGA (640x480)</option>
+                <option value="5">CIF (400x296)</option>
+                <option value="4">QVGA (320x240)</option>
+            </select>
+            <div>
+                <input type="checkbox" id="hmirror" onchange="voltearCamara('hmirror')">
+                <label for="hmirror-group">Voltear Horizontal</label>
+                <input type="checkbox" id="vflip" onchange="voltearCamara('vflip')">
+                <label for="vflip-group">Voltear Vertical</label>
+            </div>
+        </div>
+        <div class="controls">
+            <h2>Control de Movimiento</h2>
+            <label for="control_ip">IP de Control:</label>
+            <input type="text" id="control_ip" value="192.168.6.115">
+            <div class="grid">
+                <button onclick="enviarControl('up-left')">↖</button>
+                <button onclick="enviarControl('up')">↑</button>
+                <button onclick="enviarControl('up-right')">↗</button>
+                <button onclick="enviarControl('left')">←</button>
+                <button onclick="enviarControl('stop')">⏹</button>
+                <button onclick="enviarControl('right')">→</button>
+                <button onclick="enviarControl('down-left')">↙</button>
+                <button onclick="enviarControl('down')">↓</button>
+                <button onclick="enviarControl('down-right')">↘</button>
+            </div>
+            <button onclick="enviarControl('extra1')">Extra 1</button>
+            <button onclick="enviarControl('extra2')">Extra 2</button>
+        </div>
     </div>
-    <!-- <button onclick="enviarComando('CAMBIAR_WIFI')">Cambiar WiFi</button>#TODO: Cambiar WiFi -->
 
     <script>
         function conectarVideo() {
@@ -89,7 +97,14 @@
                 .then(response => response.text())
                 .catch(error => alert("Error volteando cámara: " + error));
         }
-    </script>
 
+        function enviarControl(direccion) {
+            var control_ip = document.getElementById("control_ip").value;
+            fetch(`http://${control_ip}/move?dir=${direccion}`, { method: "GET" })
+                .then(response => response.text())
+                .then(data => alert("Respuesta de Control: " + data))
+                .catch(error => alert("Error enviando dirección: " + error));
+        }
+    </script>
 </body>
 </html>

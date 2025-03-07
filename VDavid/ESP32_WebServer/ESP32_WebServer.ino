@@ -20,8 +20,8 @@ const int pin_servo = 18;
 const char* ap_ssid = "ESP32_robot";         // Nombre de la red propia (AP)
 const char* ap_password = "Design2024"; // Contraseña del AP
 
-const char* wifi_ssid = "Mimi 5G";       // Nombre de la red WiFi existente
-const char* wifi_password = "iOL34kmDfG12"; // Contraseña de la red WiFi existente
+const char* wifi_ssid = "Perry";       // Nombre de la red WiFi existente
+const char* wifi_password = "t4y5u6i7o8"; // Contraseña de la red WiFi existente
 
 // Crea el servidor web en el puerto indicado
 WebServer server(80);
@@ -62,6 +62,38 @@ void handle_servo_down() {
   servo1.write(ang);
   handleCors();
   server.send(200, "text/plain", "SERVO ABAJO");
+}
+
+// Nueva función para manejar las direcciones de movimiento
+void handle_move() {
+  if (!server.hasArg("dir")) {
+    handleCors();
+    server.send(400, "text/plain", "ERROR: Falta el parámetro 'dir'");
+    Serial.println("ERROR: Falta el parámetro 'dir'");
+    return;
+  }
+
+  String direction = server.arg("dir");
+  String validDirections[] = {"up-left", "up", "up-right", "left", "stop", "right", "down-left", "down", "down-right"};
+  
+  bool valid = false;
+  for (String d : validDirections) {
+    if (direction == d) {
+      valid = true;
+      break;
+    }
+  }
+
+  if (!valid) {
+    handleCors();
+    server.send(400, "text/plain", "ERROR: Dirección inválida");
+    Serial.println("ERROR: Dirección inválida");
+    return;
+  }
+
+  handleCors();
+  server.send(200, "text/plain", "Movimiento recibido: " + direction);
+  Serial.println("Movimiento recibido: " + direction);
 }
 
 // Manejo de solicitudes OPTIONS para CORS
@@ -125,6 +157,7 @@ void setup() {
   server.on("/led_off", HTTP_GET, handle_led_off);
   server.on("/servo_up", HTTP_GET, handle_servo_up);
   server.on("/servo_down", HTTP_GET, handle_servo_down);
+  server.on("/move", HTTP_GET, handle_move);  // Nueva ruta para movimiento
   server.onNotFound(handleOptions);
 
   // Iniciar el servidor
