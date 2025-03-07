@@ -30,12 +30,14 @@ WebServer server(80);
 void handle_led_on() {
   digitalWrite(pin_led, HIGH);
   server.send(200, "text/plain", "LED ENCENDIDO");
+  Serial.println("LED ENCENDIDO");
 }
 
 // Funcion LED OFF
 void handle_led_off() {
   digitalWrite(pin_led, LOW);
   server.send(200, "text/plain", "LED APAGADO");
+  Serial.println("LED APAGADO");
 }
 
 // Funcion SERVO ARRIBA
