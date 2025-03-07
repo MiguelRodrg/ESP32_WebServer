@@ -10,7 +10,6 @@
 #include <ESP32Servo.h>
 
 // Objetos servo
-int conteo = 20;
 Servo servo1;
 
 // Variables a usar
@@ -105,9 +104,5 @@ void setup() {
 
 // [LOOP DE ESP32]
 void loop() {
-  if (conteo > 0) {
-    Serial.println(WiFi.softAPIP());
-    conteo--;
-  }
   server.handleClient();
 }
